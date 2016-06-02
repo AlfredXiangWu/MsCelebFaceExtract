@@ -11,6 +11,12 @@
 #include "stdafx.h"
 #include "base64.h"
 
+#ifdef _OPENMP
+#include "omp.h"
+#else
+#define omp_get_thread_num() 0
+#endif
+
 #define _MAX_PATH 1024
 #define DEBUG 1
 
@@ -32,14 +38,46 @@ int ReadTSV(const string source_path,
     }
 
     string line;
+
     while(getline(tsv, line)) {
+#ifdef _OPENMP
+        const int num_thread = 2*omp_get_num_procs();
+
+        vecS batch;
+        string img_path[num_thread];
+        batch.push_back(line);
+        for(int i = 1; i < num_thread; ++i) {
+            if(getline(tsv, line))
+                batch.push_back(line);
+            else
+                goto EXIT;
+        }
+
+EXIT:
+        omp_set_num_threads(num_thread);
+        #pragma omp parallel for 
+        for (int i = 0; i < batch.size(); ++i) {
+            ReadLine(batch[i], save_root_path, &img_path[i]);
+        }
+
+        for (int i = 0; i < batch.size(); ++i) {
+            cout << img_path[i] << " is complete." << endl;
+            log_list << img_path[i] << endl;
+        }
+
+#else
+
         ReadLine(line, save_root_path, &img_path);
         cout << img_path << " is complete." << endl;
         log_list << img_path << endl;
-    }
+
+#endif // _OPENMP
+
+    } // while(getline(tsv, line))
     log_list.close();
     tsv.close();
 }
+
 
 int ReadLine(string line, const string save_root_path, string *img_path) {
     vecS str;

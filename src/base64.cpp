@@ -36,13 +36,6 @@ int base64_decode(const char *data,
 
     if (decoding_table == NULL) build_decoding_table();
 
-    // if (input_length % 4 != 0) return NULL;
-
-    // *output_length = input_length / 4 * 3;
-    // if (data[input_length - 1] == '=') (*output_length)--;
-    // if (data[input_length - 2] == '=') (*output_length)--;
-
-    // unsigned char *decoded_data = (unsigned char*)malloc(*output_length);
     if (decoded_data == NULL) return -1;
 
     for (int i = 0, j = 0; i < input_length;) {
